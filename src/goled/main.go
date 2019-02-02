@@ -18,7 +18,9 @@ import (
 
 const size_x = 12
 const size_y = 6
+//const DST_IP = "[2001:67c:2d74:8110:6ef6:c41f:53ea:d28]"
 const DST_IP = "192.168.10.240"
+
 const DST_PORT = 9998
 const brightness = 0.3
 const image_count = 5000

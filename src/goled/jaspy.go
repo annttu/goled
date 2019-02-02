@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"facette.io/natsort"
 	"fmt"
 	"image"
 	"image/color"
@@ -54,9 +55,9 @@ func (a prometheusResponseResults) Len() int           { return len(a) }
 func (a prometheusResponseResults) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a prometheusResponseResults) Less(i, j int) bool {
 	if a[i].Metric.FQDN != a[j].Metric.FQDN {
-		return a[i].Metric.FQDN < a[j].Metric.FQDN
+		return natsort.Compare(a[i].Metric.FQDN, a[j].Metric.FQDN)
 	}
-	return a[i].Metric.Name < a[j].Metric.Name
+	return natsort.Compare(a[i].Metric.Name, a[j].Metric.Name)
 }
 
 
@@ -77,7 +78,7 @@ func (a jaspyInterfaces) Len() int           { return len(a) }
 func (a jaspyInterfaces) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a jaspyInterfaces) Less(i, j int) bool {
 	if a[i].DeviceId != a[j].DeviceId {
-		return a[i].DeviceId < a[j].DeviceId
+		return a[i].DeviceId > a[j].DeviceId
 	}
 	return a[i].Id < a[j].Id
 }
@@ -159,6 +160,10 @@ func portStats() {
 	for {
 		var x = 2
 		var y = 2
+		var up = 0
+		var down = 0
+		var trunkDown = 0
+		var trunkUp = 0
 		var prevSw = ""
 		var col color.Color
 		img := image.NewRGBA(image.Rect(0, 0, size_x*16, size_y*16))
@@ -168,6 +173,8 @@ func portStats() {
 				fmt.Printf("Status is not string")
 				continue
 			}
+
+			//fmt.Printf("%s,%s\n", ports[idx].Metric.FQDN, ports[idx].Metric.Name)
 
 			speed, ok := portspeeds[fmt.Sprintf("%s,%s", ports[idx].Metric.FQDN, ports[idx].Metric.Name)]
 
@@ -181,16 +188,20 @@ func portStats() {
 
 				if ports[idx].Metric.Neighbors == "yes" {
 					col = color.RGBA64{0, 0, intensity, 65535}
+					trunkUp += 1
 				} else {
 					col = color.RGBA64{0, intensity, 0, 65535}
+					up += 1
 				}
 
 			} else {
 
 				if ports[idx].Metric.Neighbors == "yes" {
 					col = color.RGBA64{65535, 0, 65535, 65535}
+					trunkDown += 1
 				} else {
 					col = color.RGBA64{intensity, 0, 0, 65535}
+					down += 1
 				}
 			}
 
@@ -214,7 +225,11 @@ func portStats() {
 		addLabel(img, 10, 78, "Liikenne", color.RGBA{64, 64, 64, 255})
 		addLabel(img, 10, 90, "porteittain", color.RGBA{64, 64, 64, 255})
 
-		addLabel(img, 120, 90, fmt.Sprintf("%03d Mbps", speed), color.RGBA{64, 64, 64, 255})
+		addLabel(img, 123, 90, fmt.Sprintf("%3d Mbps", speed), color.RGBA{64, 64, 64, 255})
+		addLabel(img, 123, 10, fmt.Sprintf("Jaa %d", up), color.RGBA{64, 64, 64, 255})
+		addLabel(img, 123, 30, fmt.Sprintf("Ei %d", down), color.RGBA{64, 64, 64, 255})
+		addLabel(img, 123, 50, fmt.Sprintf("Tyhja %d", trunkUp), color.RGBA{64, 64, 64, 255})
+		addLabel(img, 123, 70, fmt.Sprintf("Poissa %d", trunkDown), color.RGBA{64, 64, 64, 255})
 		drawImage(img, uint8(a%254))
 		a += 1
 		<-time.After(30*time.Millisecond)
