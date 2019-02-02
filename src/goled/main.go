@@ -1,23 +1,17 @@
 package main
 
 import (
-    "bufio"
     "bytes"
     "encoding/binary"
-    "encoding/json"
     "fmt"
     "golang.org/x/image/bmp"
     "golang.org/x/image/font"
     "golang.org/x/image/font/basicfont"
     "golang.org/x/image/math/fixed"
-    "github.com/BurntSushi/graphics-go/graphics"
     "image"
     "image/color"
-    "image/draw"
-    "image/png"
     "math"
     "net"
-    "net/http"
     "os"
     "time"
 )
@@ -38,8 +32,8 @@ type Frame struct {
     data [16*16*3*2]uint8
 }
 
-var conn net.Conn;
-var speed uint64 = 0;
+var conn net.Conn
+var speed uint64 = 0
 
 func main() {
 
@@ -49,112 +43,12 @@ func main() {
         fmt.Printf("Some error %v", err)
         return
     }
-    videoStream()
+    //videoStream()
     //
-    //go getSpeed()
-    //speedStream()
+    //mopo()
     //textStream()
-}
-
-
-func getSpeed() {
-    speed = 0
-
-    for {
-
-        resp, err := http.Get("https://valas.netcrew.fi/opus/ifstats/v1/stream/ixmon0,ixmon1")
-        if err != nil {
-            panic(err)
-        }
-        reader := bufio.NewReader(resp.Body)
-        var m map[string]interface{}
-        for {
-            line, err := reader.ReadBytes('\n')
-            if err != nil {
-                fmt.Printf("Error: %v", err)
-                break
-            } else {
-                if len(line) > 15 {
-                    //fmt.Printf("data %+v", line[5:])
-                    json.Unmarshal(line[5:], &m)
-                    fmt.Printf("data %+v\n", m["bps"])
-                    speed = uint64(m["bps"].(float64) / 1024 / 1024)
-                }
-            }
-
-        }
-    }
-}
-
-func speedStream() {
-    var factor = 0
-    var xVector = 1*factor
-    var yVector = 1*factor
-    var ypos = 87
-    var xpos = 15
-    var r = 32
-    var b = 32
-    var g = 32
-    var i = 0
-    fd, err := os.Open(fmt.Sprintf("varoituskolmio.bmp", ))
-    if err != nil {
-        panic(err)
-    }
-    baseimg, err := bmp.Decode(fd)
-    if err != nil {
-        panic(err)
-    }
-    fd, err = os.Open(fmt.Sprintf("mopo.png", ))
-    if err != nil {
-        panic(err)
-    }
-    basemopo, err := png.Decode(fd)
-    if err != nil {
-        panic(err)
-    }
-    fd, err = os.Open(fmt.Sprintf("lisakyltti.bmp", ))
-    if err != nil {
-        panic(err)
-    }
-    basekyltti, err := bmp.Decode(fd)
-    if err != nil {
-        panic(err)
-    }
-    for {
-            img := image.NewRGBA(image.Rect(0, 0, size_x*16, size_y*16))
-            draw.Draw(img, img.Bounds(), baseimg, image.Point{0,0}, draw.Src)
-            draw.Draw(img, img.Bounds(), basekyltti, image.Point{0,-72}, draw.Src)
-            rotatedMopo := image.NewRGBA(image.Rect(0, 0, basemopo.Bounds().Dy(), basemopo.Bounds().Dx()))
-            graphics.Rotate(rotatedMopo, basemopo, &graphics.RotateOptions{math.Pi / 2.0 * float64(speed) / 10240})
-            draw.Draw(img, img.Bounds(), rotatedMopo, image.Point{-25 ,-30}, draw.Over)
-            col := color.RGBA{uint8(r%255), uint8(g%255), uint8(b%255), 255}
-            addLabel(img, xpos, ypos, fmt.Sprintf("%003d", speed), col)
-            drawImage(img, uint8(i%255))
-            <-time.After(10*time.Millisecond)
-            i += 1
-            if xpos >= 16*size_x - 70 || xpos == 0 {
-                xVector = -1*factor
-                b += 16
-                r += 32
-                g += 64
-            }
-            if ypos >= 16*size_y {
-                yVector = -1*factor
-                b += 64
-            }
-            if xpos <= 0 {
-                xVector = 1*factor
-                g += 64
-            }
-            if ypos <= 10 {
-                yVector = 1*factor
-                r += 64
-            }
-            xpos += xVector
-            ypos += yVector
-    }
-
-
+    //matopeli()
+    runPortStats()
 }
 
 
