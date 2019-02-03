@@ -93,14 +93,14 @@ func getPorts() {
 	for {
 		resp, err := http.Get("https://mobydick.netcrew.fi/prometheus/api/v1/query?query=jaspy_interface_up%7Binterface_type%3D%22ethernetCsmacd%22%7D")
 		if err != nil {
-			fmt.Printf("Error: %v", err)
+			fmt.Printf("Error getting ports: %v\n", err)
 			<-time.After(30*time.Second)
 			continue
 		}
 		var m prometheusResponse
 		b, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			fmt.Printf("Error: %v", err)
+			fmt.Printf("Error reading ports payload: %v\n", err)
 			<-time.After(30*time.Second)
 			continue
 		}
@@ -122,15 +122,15 @@ func getPortSpeed() {
 
 		resp, err := http.Get("https://mobydick.netcrew.fi/prometheus/api/v1/query?query=sum(rate(jaspy_interface_octets%7Binterface_type%3D%22ethernetCsmacd%22%2Cdirection%3D%22tx%22%7D%5B60s%5D)*8)%20by%20(fqdn%2Cname)%20%2F%20(sum(jaspy_interface_speed)%20by%20(fqdn%2Cname)*1000*1000)")
 		if err != nil {
-			fmt.Printf("Error: %v", err)
-			<-time.After(30*time.Second)
+			fmt.Printf("Error getting port speed: %v\n", err)
+			<-time.After(5*time.Second)
 			continue
 		}
 		var m prometheusResponse
 		b, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			fmt.Printf("Error: %v", err)
-			<-time.After(30*time.Second)
+			fmt.Printf("Error reading port speed payload: %v\n", err)
+			<-time.After(5*time.Second)
 			continue
 		}
 		json.Unmarshal(b, &m)
@@ -144,7 +144,7 @@ func getPortSpeed() {
 			speed_str := results[idx].Value[1].(string)
 			speed, err := strconv.ParseFloat(speed_str, 64)
 			if err != nil {
-				fmt.Printf("Failed to parse %s to float", speed_str)
+				fmt.Printf("Failed to parse %s to float\n", speed_str)
 				continue
 			}
 			portspeeds_2[fmt.Sprintf("%s,%s", results[idx].Metric.FQDN, results[idx].Metric.Name)] = speed
@@ -170,7 +170,7 @@ func portStats() {
 		for idx := 0; idx < len(ports); idx++ {
 			status, success := ports[idx].Value[1].(string)
 			if !success {
-				fmt.Printf("Status is not string")
+				fmt.Printf("Status is not string\n")
 				continue
 			}
 
@@ -225,7 +225,7 @@ func portStats() {
 		addLabel(img, 10, 78, "Liikenne", color.RGBA{64, 64, 64, 255})
 		addLabel(img, 10, 90, "porteittain", color.RGBA{64, 64, 64, 255})
 
-		addLabel(img, 123, 90, fmt.Sprintf("%3d Mbps", speed), color.RGBA{64, 64, 64, 255})
+		addLabel(img, 123, 90, fmt.Sprintf("%4d Mbps", speed), color.RGBA{64, 64, 64, 255})
 		addLabel(img, 123, 10, fmt.Sprintf("Jaa %d", up), color.RGBA{64, 64, 64, 255})
 		addLabel(img, 123, 30, fmt.Sprintf("Ei %d", down), color.RGBA{64, 64, 64, 255})
 		addLabel(img, 123, 50, fmt.Sprintf("Tyhja %d", trunkUp), color.RGBA{64, 64, 64, 255})
